@@ -1,14 +1,15 @@
 
-var vertexShader = "vertex-shader";
-var fragmentShader = "fragment-shader";
+var vertexShader = "vertex-shader-phong";
+var fragmentShader = "fragment-shader-phong";
 
 window.onload = function() {
 	
 	var gl = initialize();
 	var room = new World(gl, 9.81, 10);
 
-	var viewMatrix = lookAt(vec3(3,3,3), vec3(0,0,0), vec3(0,1,0));
-    gl.uniformMatrix4fv(gl.u_ViewMatrix, false, flatten(viewMatrix));
+	var viewMatrix = lookAt(vec3(0.0,0.5,1.0), vec3(0.0,0.0,-1.0), vec3(0,1,0));
+    gl.uniformMatrix4fv(gl.u_ViewMatrix, false, flatten(viewMatrix));   // set the model transform (setting to identity initially)
+    gl.uniformMatrix4fv(gl.u_ModelMatrix, false, flatten(mat4()));
 
 	//var camera = new Camera(gl, 0, room.size()/2, room.size()/2);
 
@@ -40,14 +41,32 @@ function initialize() {
 
     
     gl.u_ModelMatrix =  gl.getUniformLocation(gl.program, 'u_ModelMatrix');
-
     gl.u_ViewMatrix = gl.getUniformLocation(gl.program, 'u_ViewMatrix');
-    
-    var projection  = perspective(70, 1, .1, 90);   
     gl.u_Projection = gl.getUniformLocation(gl.program, 'u_Projection');
+    
+    
+    // set the perspective projection
+    var projection  = perspective(70, canvas.width/canvas.height, 1, 800);
     gl.uniformMatrix4fv(gl.u_Projection, false, flatten(projection));
     
+    // BEGIN LIGHTING SETUP
+    var u_LightPosition= gl.getUniformLocation(gl.program, 'u_LightPosition');
+    gl.uniform3f(u_LightPosition, 0.0,2.0,2.0);
     
+    var u_AmbientLight = gl.getUniformLocation(gl.program, 'u_AmbientLight');
+    gl.uniform3f(u_AmbientLight, 0.2, 0.2, 0.2);
+    
+    var u_DiffuseLight = gl.getUniformLocation(gl.program, 'u_DiffuseLight');
+    gl.uniform3f(u_DiffuseLight, 0.9, 0.9, 0.9);
+
+    var u_DiffuseLight = gl.getUniformLocation(gl.program, 'u_SpecularLight');
+    gl.uniform3f(u_DiffuseLight, 0.9, 0.9, 0.9);
+
+    var u_Coloring = gl.getUniformLocation(gl.program, 'u_Shininess');
+    gl.uniform1f(u_Coloring, 3.0);
+    // END LIGHTING SETUP
+
+
     return gl;
 }
 
@@ -65,7 +84,7 @@ function World(gl, gravity, friction) {
    
     // vertices of the cube, we are duplicating points because the faces have different normals
     var vertices  = new Float32Array([
-          2.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0,-1.0, 1.0,  1.0,-1.0, 1.0, // front face
+          1.0, 1.0, 1.0, -1.0, 1.0, 1.0, -1.0,-1.0, 1.0,  1.0,-1.0, 1.0, // front face
           1.0, 1.0, 1.0,  1.0,-1.0, 1.0,  1.0,-1.0,-1.0,  1.0, 1.0,-1.0, // right face
           1.0, 1.0,-1.0,  1.0,-1.0,-1.0, -1.0,-1.0,-1.0, -1.0, 1.0,-1.0, // back face
          -1.0, 1.0,-1.0, -1.0,-1.0,-1.0, -1.0,-1.0, 1.0, -1.0, 1.0, 1.0, // left face
@@ -75,12 +94,12 @@ function World(gl, gravity, friction) {
     
     
     var normals = new Float32Array([
-        0.0, 0.0, 1.0,  0.0, 0.0, 1.0,  0.0, 0.0, 1.0,  0.0, 0.0, 1.0, // front face
-        1.0, 0.0, 0.0,  1.0, 0.0, 0.0,  1.0, 0.0, 0.0,  1.0, 0.0, 0.0, // right face
-        0.0, 0.0,-1.0,  0.0, 0.0,-1.0,  0.0, 0.0,-1.0,  0.0, 0.0,-1.0, // back face
-       -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, // left face
-        0.0, 1.0, 0.0,  0.0, 1.0, 0.0,  0.0, 1.0, 0.0,  0.0, 1.0, 0.0, // top face
-        0.0,-1.0, 0.0,  0.0,-1.0, 0.0,  0.0,-1.0, 0.0,  0.0,-1.0, 0.0, // bottom face
+        0.0, 0.0,-1.0,  0.0, 0.0,-1.0,  0.0, 0.0,-1.0,  0.0, 0.0,-1.0, // front face
+       -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, -1.0, 0.0, 0.0, // right face/
+        0.0, 0.0, 1.0,  0.0, 0.0, 1.0,  0.0, 0.0,1.0,   0.0, 0.0, 1.0, // back face
+        1.0, 0.0, 0.0,  1.0, 0.0, 0.0,  1.0, 0.0, 0.0,  1.0, 0.0, 0.0, // left face
+        0.0,-1.0, 0.0,  0.0,-1.0, 0.0,  0.0,-1.0, 0.0,  0.0,-1.0, 0.0, // top face
+        0.0, 1.0, 0.0,  0.0, 1.0, 0.0,  0.0, 1.0, 0.0,  0.0, 1.0, 0.0, // bottom face
     ]);
     
 
