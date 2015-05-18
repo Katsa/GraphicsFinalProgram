@@ -10,11 +10,21 @@ window.onload = function() {
     var g_last = Date.now();
 
 	var room = new World(gl, 9.81, 10);
-    room.addBall(gl, 0.05, 1.0, 0.8);
-    room.addBall(gl, 0.05, 1.0, 0.8);
-    room.addBall(gl, 0.05, 1.0, 0.8);
-    room.addBall(gl, 0.05, 1.0, 0.8);
-    room.addBall(gl, 0.05, 1.0, 0.8);
+        room.addBall(gl, 0.05, 1.0, 0.8);
+
+    var canvas = document.getElementById('gl-canvas');
+    canvas.onmousedown = function(event) {
+        if (event.button == 0) {
+            room.addBall(gl, 0.05, 1.0, 0.8);
+        } else {
+            for (i = 0; i < room.balls.length; i++) {
+                var ball = room.balls[i];
+                ball.velocity = vec3(-5+Math.random()*10,-10+Math.random()*20,-5+Math.random()*10);
+
+            }   
+        }
+    }
+
 
     //var camera = new Camera(gl, 0, room.size()/2, room.size()/2);
 
@@ -117,11 +127,28 @@ function World(gl, gravity, friction) {
 
     this.addBall = function(gl, radius, mass, bounciness) {
         this.balls.push(new Ball(gl, radius, mass, bounciness)) //Radius, Mass, Bouncinesst
-
-
     }
     this.draw = function() {
         this.walls.draw();
+
+        //Test For Collisions
+        for (i = 0; i < this.balls.length; i++) {
+            this.balls[i].collisions = [];
+
+        } 
+
+        for (i = 0; i < this.balls.length; i++) {
+            for (j=i+1; j < this.balls.length; j++) {
+
+                var v = subtract(this.balls[i].position, this.balls[j].position);
+
+                if (length(v) <= this.balls[i].radius+this.balls[j].radius) {
+                    this.balls[i].collisions.push(scalev(-1,v));
+                    //console.log();
+                    this.balls[j].collisions.push(v);
+                }
+            }
+        }
 
         for (i = 0; i < this.balls.length; i++) {
             var ball = this.balls[i];
@@ -233,6 +260,8 @@ function World(gl, gravity, friction) {
         this.position = vec3(-1+Math.random()*2,-1+Math.random()*2,-1+Math.random()*2);
         this.velocity = vec3(-5+Math.random()*10,-5+Math.random()*10,-5+Math.random()*10);
 
+        this.collisions = [];
+
         var vertexBuffer;
         var indexBuffer;
         var normalBuffer;
@@ -262,7 +291,15 @@ function World(gl, gravity, friction) {
 
 
         this.updatePosition = function () {
-            //console.log(timeElapsed);
+
+                for (c = 0; c <this.collisions.length; c++) {
+                    this.velocity = scalev(-1,this.velocity);
+                    p = scalev(dot(this.velocity, this.collisions[c])/dot(this.collisions[c], this.collisions[c]),this.collisions[c]);
+                    this.velocity = subtract(p,this.velocity)
+
+                    //this.velocity = this.collisions[c];
+
+                }
     
             this.velocity[1] = -gravity*timeElapsed+this.velocity[1];
 
@@ -274,8 +311,12 @@ function World(gl, gravity, friction) {
             var x = this.position[0] + this.velocity[0]*timeElapsed;
             var y = this.position[1] + this.velocity[1]*timeElapsed;
             var z = this.position[2] + this.velocity[2]*timeElapsed;
+            
+            //if (this.collisions.length != 0) {
 
-            //console.log(y)
+
+
+            //}
             
             if (Math.abs(x) > 1.0 - this.radius) {
                 this.velocity[0] = -this.velocity[0]*this.bounciness;
@@ -296,6 +337,58 @@ function World(gl, gravity, friction) {
             }
             
         }
+        // A;ternative Phsics Model
+        /*
+        this.updatePosition = function () {
+            var velocityNext = vec3();
+            
+            //this.velocity[1] = -gravity*timeElapsed+this.velocity[1];
+
+            velocityNext[1] = -gravity*timeElapsed+this.velocity[1];
+            //console.log(timeElapsed);
+
+            if (this.position[1] <= -1.1 + this.radius) {
+                velocityNext[0] = this.velocity[0] * Math.pow(5,(this.acceleration[0]*timeElapsed)/this.velocity[0])
+                velocityNext[2] = this.velocity[2] * Math.pow(5,(this.acceleration[2]*timeElapsed)/this.velocity[2])
+            } else {
+                velocityNext[0] = this.velocity[0] + this.acceleration[0] * timeElapsed;
+                velocityNext[2] = this.velocity[2] + this.acceleration[2] * timeElapsed;
+            }
+
+            this.acceleration[0] = (velocityNext[0] - this.velocity[0])/timeElapsed;
+            this.acceleration[1] = (velocityNext[1] - this.velocity[1])/timeElapsed;
+            this.acceleration[2] = (velocityNext[2] - this.velocity[2])/timeElapsed;
+
+            this.velocity = velocityNext;
+
+            var x = this.position[0] + this.velocity[0]*timeElapsed;
+            var y = this.position[1] + this.velocity[1]*timeElapsed;
+            var z = this.position[2] + this.velocity[2]*timeElapsed;
+
+            //console.log(y)
+            
+            if (Math.abs(x) > 1.0 - this.radius) {
+                this.velocity[0] = -this.velocity[0]*this.bounciness;
+                this.acceleration[0] = -this.acceleration[0]*this.bounciness;
+            } else {
+                this.position[0] = x
+            }
+
+            if (Math.abs(y) > 1.0 - this.radius) {
+                this.velocity[1] = -this.velocity[1]*this.bounciness;
+                this.acceleration[1] = -this.acceleration[1]*this.bounciness;
+            } else {
+                this.position[1] = y;
+            }
+            
+            if (Math.abs(z) > 1.0 - this.radius) {
+                this.velocity[2] = -this.velocity[2]*this.bounciness;
+                this.acceleration[2] = -this.acceleration[2]*this.bounciness;
+            } else {
+                this.position[2] = z;
+            }
+            
+        }*/
 
 
    
@@ -526,6 +619,60 @@ function enableAttribute(gl, buffer, name, size, stride, offset){
 
 
 
+/*
+ * This creates a generic Quaternion object which I use for storing orientation in my camera.
+ */
+function Quaternion(w,x,y,z) {
+    this.w = w;
+    this.x = x;
+    this.y = y;
+    this.z = z;
+    
+    /* Multiply this quaternion by another and return the result.
+    Since multiplcation order is important, note that we are multiplying this*q.
+    */
+    this.multiply = function(q){
+        var w = this.w * q.w - this.x*q.x - this.y*q.y - this.z*q.z;
+        var x = this.w * q.x + this.x*q.w + this.y*q.z - this.z*q.y;
+        var y = this.w * q.y - this.x*q.z + this.y*q.w + this.z*q.x;
+        var z = this.w * q.z + this.x*q.y - this.y*q.x + this.z*q.w;
+        return new Quaternion(w,x,y,z);
+    }
+    
+    /* Return the inverse of a quaternion */
+    this.conjugate = function(){
+        return new Quaternion(this.w, -this.x, -this.y, -this.z);
+    }
+    
+    /* Normalize the quaternion */
+    this.normalize = function(){
+        var magnitude = Math.sqrt(this.x*this.x + this.y*this.y + this.z*this.z + this.w*this.w);
+        
+        this.w /= magnitude;
+        this.x /= magnitude;
+        this.y /= magnitude;
+        this.z /= magnitude;
+    }
+    
+    /* Convert the quaterion to a rotation matrix */
+    this.toRotationMatrix = function(){
+        this.normalize();
+        var xx = this.x*this.x;
+        var yy = this.y*this.y;
+        var zz = this.z*this.z;
+        var xy = this.x*this.y;
+        var xz = this.x*this.z;
+        var xw = this.x*this.w;
+        var yz = this.y*this.z;
+        var yw = this.y*this.w;
+        var zw = this.z*this.w;
+        
+        return mat4(1 - 2*(yy+zz), 2*(xy - zw),     2*(xz + yw),   0,
+                    2*(xy+zw),     1 - 2*(xx + zz), 2*(yz - xw),   0,
+                    2*(xz-yw),     2*(yz+xw),       1 - 2*(xx+yy), 0,
+                    0,             0,               0,             1);
+    }
+}
 
 
 
