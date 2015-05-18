@@ -93,7 +93,7 @@ function initialize() {
 
 function World(gl, gravity, friction) {
 	this.balls = [];
-    this.gravity = 0.0981;
+    this.gravity = 0.6;
     
 
     var vertexBuffer;
@@ -103,7 +103,10 @@ function World(gl, gravity, friction) {
     var numVertices;
 
     this.addBall = function() {
-        this.balls.push(new Ball(gl, 0.05, 1.0, 1.0))
+        this.balls.push(new Ball(gl, 0.05, 1.0, 0.8)) //Radius, Mass, Bouncinesst
+        this.balls.push(new Ball(gl, 0.05, 1.0, 0.8)) //Radius, Mass, Bouncinesst
+        this.balls.push(new Ball(gl, 0.05, 1.0, 0.8)) //Radius, Mass, Bouncinesst
+
 
     }
     
@@ -235,40 +238,43 @@ function World(gl, gravity, friction) {
      */
     function Ball(gl, radius, mass, bounciness) {
         this.radius = radius;
-        this.position = vec3(0.0,0.0,-0.5)
-        this.velocity = vec3(0.0,0.1,0.0)
+        this.bounciness = bounciness;
+        this.position = vec3(-1+Math.random()*2,-1+Math.random()*2,-1+Math.random()*2)
+        this.velocity = vec3(-1+Math.random()*2,-1+Math.random()*2,-1+Math.random()*2)
 
 
 
 
         this.updatePosition = function () {
             //console.log(timeElapsed);
+            this.velocity[0] = this.velocity[0];
+            this.velocity[1] = -gravity*timeElapsed+this.velocity[1];
+            this.velocity[2] = this.velocity[2];
 
             var x = this.position[0] + this.velocity[0]*timeElapsed;
-            var y = this.position[1] + this.velocity[1]*timeElapsed - 0.5*gravity * Math.pow(timeElapsed,2.0);
+            var y = this.position[1] + this.velocity[1]*timeElapsed;
             var z = this.position[2] + this.velocity[2]*timeElapsed;
 
-            console.log(y)
-            /*
-            if (Math.abs(x) > 1.0) {
-                this.velocity[0] = -this.velocity[0];
+            //console.log(y)
+            
+            if (Math.abs(x) > 1.0 - this.radius) {
+                this.velocity[0] = -this.velocity[0]*this.bounciness;
             } else {
                 this.position[0] = x
-            }*/
+            }
 
-            if (Math.abs(y) > 1.0) {
-                this.velocity[1] = -this.velocity[1];
+            if (Math.abs(y) > 1.0 - this.radius) {
+                this.velocity[1] = -this.velocity[1]*this.bounciness;
             } else {
                 this.position[1] = y;
             }
-            /*
-            if (Math.abs(z) > 1.0) {
-                this.velocity[2] = -this.velocity[2];
+            
+            if (Math.abs(z) > 1.0 - this.radius) {
+                this.velocity[2] = -this.velocity[2]*this.bounciness;
             } else {
                 this.position[2] = z;
-            }*/
+            }
             
-            this.velocity = -gravity*timeElapsed+this.velocity
         }
 
 
