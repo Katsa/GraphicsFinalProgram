@@ -10,7 +10,7 @@ window.onload = function() {
 	var room = new World(gl, 9.81, 10);
     room.addBall()
 
-	var viewMatrix = lookAt(vec3(0.0,0.5,1.0), vec3(0.0,0.0,-1.0), vec3(0,1,0));
+	var viewMatrix = lookAt(vec3(0.0,0.0,2.4), vec3(0.0,0.0,-1.0), vec3(0,1,0));
     gl.uniformMatrix4fv(gl.u_ViewMatrix, false, flatten(viewMatrix));   // set the model transform (setting to identity initially)
 
 	//var camera = new Camera(gl, 0, room.size()/2, room.size()/2);
@@ -134,7 +134,7 @@ function World(gl, gravity, friction) {
 
     
     var indices = new Uint8Array([
-       0,1,2,  0,2,3, // front face
+       //0,1,2,  0,2,3, // front face
        4,5,6,  4,6,7,   // right face
        8,9,10, 8,10,11, // back face
        12,13,14,  12,14,15, // left face
