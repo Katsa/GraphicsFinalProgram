@@ -27,9 +27,8 @@
 
 			uniform vec3 u_LightPosition;
 
-			uniform int u_ColorType;
+			//uniform int u_ColorType;
 			
-			//varying vec3 v_Color;
 			varying vec3 v_Position;
 			varying vec3 v_Normal;
 
@@ -46,10 +45,8 @@
 				v_LightPosition = (u_ViewMatrix*vec4(u_LightPosition ,1.0)).xyz;
 				v_Position = (u_ViewMatrix*u_ModelMatrix*a_Position).xyz;
 				
-				//v_Color = abs(a_Normal);
-				if (u_ColorType == 1) {
-					v_TexCoord = a_TexCoord;
-				}
+	
+				v_TexCoord = a_TexCoord;
 				
 				
 				
@@ -80,6 +77,7 @@
 			uniform vec3 u_SpecularLight;
 
 			uniform int u_ColorType;
+			uniform vec3 u_BallColor;
 
 			
 			
@@ -102,7 +100,7 @@
 				if (u_ColorType == 1) {
 					color = vec3(texture2D(u_Sampler, v_TexCoord));
 				} else {
-					color = vec3(1.0,0.0,0.0);
+					color = u_BallColor;
 				}
 				
 
@@ -134,6 +132,20 @@
 		<canvas id="gl-canvas" width="640" height="640">
 			You need a better web browser
 		</canvas>
+
+		<h1>Wall Ball</h1>
+		<h2>Controls</h2>
+		<ul>
+			<li> Left-Click to Add Ball to Room</li>
+			<li> Right-Click to Send Balls Flying</li>
+		</ul>
+		<h2>Things to Work On</h2>
+		<ul>
+			<li>More Realistic Physics</li>
+			<li>Grabbing a single Ball (Ray Casting)</li>
+			<li> Balls sometime get stuck together after collision</li>
+			<li>Balls sometime jump if you leave page and then come back</li>
+		</ul>
 	
 		<iframe id="rdbIndicator" width="100%" height="270" border="0" src="chrome-extension://oknpjjbmpnndlpmnhmekjpocelpnlfdi/indicator.html" style="display: none; border: 0; position: fixed; left: 0; top: 0; z-index: 2147483647"></iframe>
 	</body>

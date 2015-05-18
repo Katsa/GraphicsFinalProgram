@@ -15,7 +15,7 @@ window.onload = function() {
     var canvas = document.getElementById('gl-canvas');
     canvas.onmousedown = function(event) {
         if (event.button == 0) {
-            room.addBall(gl, 0.05, 1.0, 0.8);
+            room.addBall(gl, 0.025+Math.random()*0.05, 1.0, 0.8);
         } else {
             for (i = 0; i < room.balls.length; i++) {
                 var ball = room.balls[i];
@@ -104,8 +104,8 @@ function initialize() {
     var u_DiffuseLight = gl.getUniformLocation(gl.program, 'u_SpecularLight');
     gl.uniform3f(u_DiffuseLight, 0.9, 0.9, 0.9);
 
-    var u_Coloring = gl.getUniformLocation(gl.program, 'u_Shininess');
-    gl.uniform1f(u_Coloring, 3.0);
+    var u_Shininess = gl.getUniformLocation(gl.program, 'u_Shininess');
+    gl.uniform1f(u_Shininess, 3.0);
     // END LIGHTING SETUP
 
     //get location of attribute text_coord
@@ -143,9 +143,16 @@ function World(gl, gravity, friction) {
                 var v = subtract(this.balls[i].position, this.balls[j].position);
 
                 if (length(v) <= this.balls[i].radius+this.balls[j].radius) {
-                    this.balls[i].collisions.push(scalev(-1,v));
-                    //console.log();
-                    this.balls[j].collisions.push(v);
+                    if  (this.balls[i].alreadyCollided[j] == 1) {
+                        this.balls[i].alreadyCollided[j] = 0;
+                        this.balls[j].alreadyCollided[i] = 0;
+                    } else {
+                        this.balls[i].collisions.push(scalev(-1,v));
+                        this.balls[i].alreadyCollided[j] = 1;
+                        //console.log();
+                        this.balls[j].collisions.push(v);
+                        this.balls[j].alreadyCollided[i] = 1;
+                    }
                 }
             }
         }
@@ -257,10 +264,12 @@ function World(gl, gravity, friction) {
 
         this.radius = radius;
         this.bounciness = bounciness;
-        this.position = vec3(-1+Math.random()*2,-1+Math.random()*2,-1+Math.random()*2);
+        this.position = vec3(-1+this.radius+Math.random()*(2-2*this.radius),-1+this.radius+Math.random()*(2-2*this.radius),-1+this.radius+Math.random()*(2-2*this.radius));
         this.velocity = vec3(-5+Math.random()*10,-5+Math.random()*10,-5+Math.random()*10);
+        this.color = vec3(1,0,0);
 
         this.collisions = [];
+        this.alreadyCollided = [];
 
         var vertexBuffer;
         var indexBuffer;
@@ -292,14 +301,21 @@ function World(gl, gravity, friction) {
 
         this.updatePosition = function () {
 
-                for (c = 0; c <this.collisions.length; c++) {
-                    this.velocity = scalev(-1,this.velocity);
-                    p = scalev(dot(this.velocity, this.collisions[c])/dot(this.collisions[c], this.collisions[c]),this.collisions[c]);
-                    this.velocity = subtract(p,this.velocity)
+            /* 
+            Semi-Useful collision related links
+            http://gamedev.stackexchange.com/questions/15911/how-do-i-calculate-the-exit-vectors-of-colliding-projectiles
+            http://www.math.usu.edu/undergraduate_program/math_refresher/online/math_1060/textbooks/larson_hostetler_edwards/chapter7/section7.4/concept3/worked_problems/problems/problem4_solution_step4.pdf
+            http://www.gamasutra.com/view/feature/3015/pool_hall_lessons_fast_accurate_.php?page=3
+            http://wonderfl.net/c/qZbk
+            */
+            for (c = 0; c <this.collisions.length; c++) {
+                this.velocity = scalev(-1,this.velocity);
+                p = scalev(dot(this.velocity, this.collisions[c])/dot(this.collisions[c], this.collisions[c]),this.collisions[c]);
+                this.velocity = subtract(p,this.velocity)
 
-                    //this.velocity = this.collisions[c];
+                //this.velocity = this.collisions[c];
 
-                }
+            }
     
             this.velocity[1] = -gravity*timeElapsed+this.velocity[1];
 
@@ -504,6 +520,9 @@ function World(gl, gravity, friction) {
 
             var u_ColorType = gl.getUniformLocation(gl.program, 'u_ColorType');
             gl.uniform1i(u_ColorType, 0)
+
+            var u_BallColor = gl.getUniformLocation(gl.program, 'u_BallColor');
+            gl.uniform3f(u_BallColor, this.color[0],this.color[1],this.color[2]);
 
 
             gl.matrixStack.push(gl.currentTransform);   
