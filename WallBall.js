@@ -12,24 +12,47 @@ window.onload = function() {
 	var room = new World(gl, 9.81, 10);
         room.addBall(gl, 0.05, 1.0, 0.8);
 
+
+    var viewMatrix = lookAt(vec3(0.0,0.0,2.4), vec3(0.0,0.0,-1.0), vec3(0,1,0));
+    gl.uniformMatrix4fv(gl.u_ViewMatrix, false, flatten(viewMatrix));   // set the model transform (setting to identity initially)
+
     var canvas = document.getElementById('gl-canvas');
+    // ATTEMPT AT PICKING
     canvas.onmousedown = function(event) {
-        if (event.button == 0) {
+
+        var x = -1 + 2*(event.pageX - 8)/canvas.width;
+        var y = 1 -2*(event.pageY - 8)/canvas.height;
+        var a = normalize(vec3(x,y,-1));
+
+        for (i = 0; i< room.balls.length;i++) {
+
+            var b = normalize(subtract(room.balls[i].position,vec3(0.0,0.0,2.4)));
+
+            if (dot(a,b) > 0.999) {
+                
+                room.balls[j].color=vec3(0,1,0);
+            }
+        }
+            
+    }
+
+    window.onkeydown = function(e){
+        // ADD A BALL
+        if(e.which == 65) { //A
             room.addBall(gl, 0.025+Math.random()*0.05, 1.0, 0.8);
-        } else {
+        }
+        // "GIVE ALL THE BALLS A RANDOM VELOCITY
+        if (e.which == 81) { //Q
             for (i = 0; i < room.balls.length; i++) {
                 var ball = room.balls[i];
                 ball.velocity = vec3(-5+Math.random()*10,-10+Math.random()*20,-5+Math.random()*10);
 
-            }   
+            }  
         }
     }
 
 
-    //var camera = new Camera(gl, 0, room.size()/2, room.size()/2);
 
-	var viewMatrix = lookAt(vec3(0.0,0.0,2.4), vec3(0.0,0.0,-1.0), vec3(0,1,0));
-    gl.uniformMatrix4fv(gl.u_ViewMatrix, false, flatten(viewMatrix));   // set the model transform (setting to identity initially)
 
     Promise.all([ initializeTexture(gl, 1, 'images/hardwood.jpg')])
       .then(function () {tick();})
@@ -51,8 +74,6 @@ window.onload = function() {
 
         requestAnimationFrame(tick);
     };
-    
-    //tick();
 }
 
 
@@ -513,14 +534,11 @@ function World(gl, gravity, friction) {
 
             gl.uniform1i(gl.u_Sampler,1);
 
-
-            //
-
-
-
+            // Draws with a solid color
             var u_ColorType = gl.getUniformLocation(gl.program, 'u_ColorType');
             gl.uniform1i(u_ColorType, 0)
 
+            //Send Ball Color to Shader
             var u_BallColor = gl.getUniformLocation(gl.program, 'u_BallColor');
             gl.uniform3f(u_BallColor, this.color[0],this.color[1],this.color[2]);
 
@@ -529,8 +547,6 @@ function World(gl, gravity, friction) {
             gl.currentTransform = mult(gl.currentTransform, translate(this.position[0], this.position[1], this.position[2])); 
             gl.currentTransform = mult(gl.currentTransform, scale(this.radius, this.radius, this.radius)); 
             gl.uniformMatrix4fv(gl.u_ModelMatrix, false, flatten(gl.currentTransform));
-
-            // need to rebind the array buffer to the appropriate VBO in cse some other buffer has been made active
         
             
             enableAttribute(gl, vertexBuffer, 'a_Position', 3, 0, 0);
@@ -634,63 +650,6 @@ function enableAttribute(gl, buffer, name, size, stride, offset){
    }
 
 
-}
-
-
-
-/*
- * This creates a generic Quaternion object which I use for storing orientation in my camera.
- */
-function Quaternion(w,x,y,z) {
-    this.w = w;
-    this.x = x;
-    this.y = y;
-    this.z = z;
-    
-    /* Multiply this quaternion by another and return the result.
-    Since multiplcation order is important, note that we are multiplying this*q.
-    */
-    this.multiply = function(q){
-        var w = this.w * q.w - this.x*q.x - this.y*q.y - this.z*q.z;
-        var x = this.w * q.x + this.x*q.w + this.y*q.z - this.z*q.y;
-        var y = this.w * q.y - this.x*q.z + this.y*q.w + this.z*q.x;
-        var z = this.w * q.z + this.x*q.y - this.y*q.x + this.z*q.w;
-        return new Quaternion(w,x,y,z);
-    }
-    
-    /* Return the inverse of a quaternion */
-    this.conjugate = function(){
-        return new Quaternion(this.w, -this.x, -this.y, -this.z);
-    }
-    
-    /* Normalize the quaternion */
-    this.normalize = function(){
-        var magnitude = Math.sqrt(this.x*this.x + this.y*this.y + this.z*this.z + this.w*this.w);
-        
-        this.w /= magnitude;
-        this.x /= magnitude;
-        this.y /= magnitude;
-        this.z /= magnitude;
-    }
-    
-    /* Convert the quaterion to a rotation matrix */
-    this.toRotationMatrix = function(){
-        this.normalize();
-        var xx = this.x*this.x;
-        var yy = this.y*this.y;
-        var zz = this.z*this.z;
-        var xy = this.x*this.y;
-        var xz = this.x*this.z;
-        var xw = this.x*this.w;
-        var yz = this.y*this.z;
-        var yw = this.y*this.w;
-        var zw = this.z*this.w;
-        
-        return mat4(1 - 2*(yy+zz), 2*(xy - zw),     2*(xz + yw),   0,
-                    2*(xy+zw),     1 - 2*(xx + zz), 2*(yz - xw),   0,
-                    2*(xz-yw),     2*(yz+xw),       1 - 2*(xx+yy), 0,
-                    0,             0,               0,             1);
-    }
 }
 
 
